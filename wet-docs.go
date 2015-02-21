@@ -18,5 +18,4 @@ func main() {
     } else if err != nil {
         panic(err)
     }
-
 }

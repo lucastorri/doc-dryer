@@ -16,13 +16,19 @@ type WETEntry struct {
     Body []byte
 }
 
-type Stringer interface {
-    String() string
-}
-
 type WETReader struct {
     reader *bufio.Reader
     header *WETEntry
+}
+
+func FromGZip(file string) (wr *WETReader, err error) {
+    if fr, err := os.Open(file); err == nil {
+        if gzr, err := gzip.NewReader(fr); err == nil {
+            wr = &WETReader { bufio.NewReader(gzr), nil }
+            err = wr.init()
+        }
+    }
+    return
 }
 
 func (reader *WETReader) Header() *WETEntry {
@@ -33,21 +39,6 @@ func (reader *WETReader) Next() (*WETEntry, error) {
     return reader.extractEntry(false)
 }
 
-func FromGZip(file string) (wr *WETReader, err error) {
-    fr, err := os.Open(file)
-    if err != nil {
-        return
-    }
-    gzr, err := gzip.NewReader(fr)
-    if err != nil {
-        return
-    }
-    buf := bufio.NewReader(gzr)
-    wr = &WETReader { buf, nil }
-    err = wr.init()
-    return
-}
-
 func (wet *WETReader) init() (err error) {
     header, err := wet.extractEntry(true)
     if err != nil {
@@ -56,6 +47,9 @@ func (wet *WETReader) init() (err error) {
     wet.header = header
     return
 }
+
+var versionRegex = regexp.MustCompile("WARC/(.*)")
+var headerRegex = regexp.MustCompile("([^:]+): (.*)")
 
 func (wet *WETReader) extractEntry(isHeader bool) (entry *WETEntry, err error) {
     defer func() {
@@ -86,9 +80,6 @@ func (wet *WETReader) nextLine() string {
     }
     return strings.TrimSpace(string(line))
 }
-
-var versionRegex = regexp.MustCompile("WARC/(.*)")
-var headerRegex = regexp.MustCompile("([^:]+): (.*)")
 
 func parseVersion(line string) string {
     return versionRegex.FindStringSubmatch(line)[1]
