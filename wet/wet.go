@@ -21,6 +21,10 @@ type WETReader struct {
     header *WETEntry
 }
 
+/**
+ * Builds a new WETReader from a GZip file, or returns an error if cannot process
+ * the given file
+ */
 func FromGZip(file string) (wr *WETReader, err error) {
     if fr, err := os.Open(file); err == nil {
         if gzr, err := gzip.NewReader(fr); err == nil {
@@ -31,10 +35,17 @@ func FromGZip(file string) (wr *WETReader, err error) {
     return
 }
 
+/**
+ * Returns the header describing this WET file
+ */
 func (reader *WETReader) Header() *WETEntry {
     return reader.header
 }
 
+/**
+ * Returns the next entry on the WET file, or an error if could not parse it. If
+ * the end of the file was reached, return an io.EOF error.
+ */
 func (reader *WETReader) Next() (*WETEntry, error) {
     return reader.extractEntry(false)
 }
@@ -58,14 +69,14 @@ func (wet *WETReader) extractEntry(isHeader bool) (entry *WETEntry, err error) {
             err = r.(error)
         }
     }()
-    version := parseVersion(wet.nextLine())
-    headers := parseHeaders(wet)
+    version := wet.parseVersion()
+    headers := wet.parseHeaders()
 
     bodyLength, err := strconv.Atoi(headers["Content-Length"])
     if err != nil {
         return
     }
-    body := parseBody(bodyLength, wet.reader)
+    body := wet.parseBody(bodyLength)
     wet.nextLine()
     wet.nextLine()
 
@@ -81,13 +92,13 @@ func (wet *WETReader) nextLine() string {
     return strings.TrimSpace(string(line))
 }
 
-func parseVersion(line string) string {
+func (wet *WETReader) parseVersion() string {
+    line := wet.nextLine()
     return versionRegex.FindStringSubmatch(line)[1]
 }
 
-func parseHeaders(wet *WETReader) (headers map[string]string) {
+func (wet *WETReader) parseHeaders() (headers map[string]string) {
     headers = make(map[string]string)
-
     line := wet.nextLine()
     for line != "" {
         match := headerRegex.FindStringSubmatch(line)
@@ -97,11 +108,11 @@ func parseHeaders(wet *WETReader) (headers map[string]string) {
     return
 }
 
-func parseBody(length int, reader *bufio.Reader) (body []byte) {
+func (wet *WETReader) parseBody(length int) (body []byte) {
     body = make([]byte, length)
     total := 0
     for total < length {
-        read, err := reader.Read(body[total:])
+        read, err := wet.reader.Read(body[total:])
         if err != nil {
             panic(err)
         }
