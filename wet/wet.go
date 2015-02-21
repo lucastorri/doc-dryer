@@ -10,7 +10,6 @@ import (
 )
 
 type WETEntry struct {
-    IsHeader bool
     Version string
     Headers map[string]string
     Body []byte
@@ -46,12 +45,12 @@ func (reader *WETReader) Header() *WETEntry {
  * Returns the next entry on the WET file, or an error if could not parse it. If
  * the end of the file was reached, return an io.EOF error.
  */
-func (reader *WETReader) Next() (*WETEntry, error) {
-    return reader.extractEntry(false)
+func (wet *WETReader) Next() (*WETEntry, error) {
+    return wet.extractEntry()
 }
 
 func (wet *WETReader) init() (err error) {
-    header, err := wet.extractEntry(true)
+    header, err := wet.extractEntry()
     if err != nil {
         return
     }
@@ -62,7 +61,7 @@ func (wet *WETReader) init() (err error) {
 var versionRegex = regexp.MustCompile("WARC/(.*)")
 var headerRegex = regexp.MustCompile("([^:]+): (.*)")
 
-func (wet *WETReader) extractEntry(isHeader bool) (entry *WETEntry, err error) {
+func (wet *WETReader) extractEntry() (entry *WETEntry, err error) {
     defer func() {
         r := recover()
         if r != nil {
@@ -80,7 +79,7 @@ func (wet *WETReader) extractEntry(isHeader bool) (entry *WETEntry, err error) {
     wet.nextLine()
     wet.nextLine()
 
-    entry = &WETEntry { isHeader, version, headers, body }
+    entry = &WETEntry { version, headers, body }
     return
 }
 
