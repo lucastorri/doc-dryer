@@ -5,6 +5,7 @@ import (
     "io"
     "here.com/scrooge/wet-docs/wet"
     "here.com/scrooge/wet-docs/workq"
+    "here.com/scrooge/wet-docs/es"
     "runtime"
 )
 
@@ -13,7 +14,7 @@ func main() {
 
     file := "/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
 
-
+    esc := es.NewElasticSearch("http://127.0.01:9200/")
 
     q, err := workq.NewQueue("local=" + file + "," + file)
     // q, err := workq.NewQueue("rabbit=amqp://guest:guest@localhost:5672/")
@@ -37,6 +38,10 @@ func main() {
                     } else if wet.Err != nil {
                         panic(err)
                     } else {
+                        err := esc.Add(wet.Entry)
+                        if err != nil {
+                            panic(err)
+                        }
                         fmt.Print(".")
                     }
                 }
