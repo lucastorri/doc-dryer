@@ -2,6 +2,7 @@ package es
 
 import (
     "bytes"
+    "sync"
     "net/http"
     "encoding/json"
     "here.com/scrooge/wet-docs/wet"
@@ -14,23 +15,28 @@ type ElasticSearch struct {
     client *http.Client
     server string
     batchSize int
-    total int
+    itemsInBuffer int
     buffer []*wet.WETEntry
+    ongoingRequests *sync.WaitGroup
+    hadErrors bool
 }
 
 func NewElasticSearch(server string, batchSize int) *ElasticSearch {
-    es := &ElasticSearch { &http.Client{}, server, batchSize, 0, nil }
+    var ongoingRequests sync.WaitGroup
+    es := &ElasticSearch { &http.Client{}, server, batchSize, 0, nil, &ongoingRequests, false }
     es.newBuffer()
     return es
 }
 
 func (es *ElasticSearch) newBuffer() {
-    es.total = 0
+    es.itemsInBuffer = 0
     es.buffer = make([]*wet.WETEntry, es.batchSize)
 }
 
 func (es *ElasticSearch) submit() {
-    docs := es.buffer
+    docs := es.buffer[:es.itemsInBuffer]
+    es.ongoingRequests.Add(1)
+
     go func() {
         var buffer bytes.Buffer
         for _, doc := range docs {
@@ -38,9 +44,13 @@ func (es *ElasticSearch) submit() {
         }
 
         url := es.server + "/_bulk"
-        res, _ := http.Post(url, "application/json", bytes.NewReader(buffer.Bytes()))
-        defer res.Body.Close()
-
+        res, err := http.Post(url, "application/json", bytes.NewReader(buffer.Bytes()))
+        if err == nil {
+            res.Body.Close()
+        } else {
+            es.hadErrors = true
+        }
+        defer es.ongoingRequests.Done()
     }()
     es.newBuffer()
 }
@@ -72,16 +82,16 @@ func serializeDocument(w *wet.WETEntry, buf *bytes.Buffer) {
 }
 
 func (es *ElasticSearch) isFull() bool {
-    return es.total == es.batchSize
+    return es.itemsInBuffer == es.batchSize
 }
 
 func (es *ElasticSearch) isEmpty() bool {
-    return es.total == 0
+    return es.itemsInBuffer == 0
 }
 
 func (es *ElasticSearch) enqueue(w *wet.WETEntry) {
-    es.buffer[es.total] = w
-    es.total++
+    es.buffer[es.itemsInBuffer] = w
+    es.itemsInBuffer++
 }
 
 func (es *ElasticSearch) Add(w *wet.WETEntry) {
@@ -91,9 +101,10 @@ func (es *ElasticSearch) Add(w *wet.WETEntry) {
     }
 }
 
-func (es *ElasticSearch) Close() {
+func (es *ElasticSearch) Close() bool {
     if !es.isEmpty() {
         es.submit()
     }
-    //TODO wait ongoing requests to be done, using a channel of channel, with each channel mapping a request and sending a single message to warn it's done
+    es.ongoingRequests.Wait()
+    return !es.hadErrors
 }
