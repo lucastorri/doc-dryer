@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "io"
+    "errors"
     "here.com/scrooge/wet-docs/wet"
     "here.com/scrooge/wet-docs/workq"
     "here.com/scrooge/wet-docs/es"
@@ -35,20 +36,30 @@ func main() {
                 wch := wr.Channel()
                 for wet := range wch {
                     if wet.Err == io.EOF {
-                        fmt.Println("!")
+                        break
                     } else if wet.Err != nil {
-                        panic(err)
+                        err = wet.Err
+                        break
                     } else {
                         esc.Add(wet.Entry)
                         fmt.Print(".")
                     }
                 }
-                f.Ack()
-            } else {
-                f.Nack()
+                if !esc.Flush() {
+                    err = errors.New("Errors while submitting files to index")
+                }
             }
-            if !esc.Flush() {
-                panic("Errors while submitting files to index")
+            if err == nil {
+                err = f.Ack()
+                fmt.Print("!")
+            } else {
+                err = f.Nack()
+                fmt.Print("x")
+            }
+            if err == nil {
+                fmt.Println("+")
+            } else {
+                fmt.Println("-")
             }
         }
     }()
