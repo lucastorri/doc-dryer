@@ -45,7 +45,6 @@ func newLocalFilesQueue(files []string) Queue {
                 case channel <- &localFileWork { f }:
                 case <-stop: break
             }
-
         }
     }()
     return &localFilesQueue { channel, stop }
