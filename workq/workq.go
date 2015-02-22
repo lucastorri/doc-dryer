@@ -13,7 +13,7 @@ type Work interface {
 }
 
 type Queue interface {
-    Channel() (<-chan Work, error)
+    Channel() (<-chan Work)
     Close()
 }
 

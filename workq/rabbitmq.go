@@ -8,6 +8,8 @@ import (
 type rabbitMQ struct {
     conn *amqp.Connection
     ch *amqp.Channel
+    channel chan Work
+    stop chan bool
 }
 
 type rabbitMQWork struct {
@@ -17,16 +19,30 @@ type rabbitMQWork struct {
 
 var queueName = "work-queue"
 
-func (rmq *rabbitMQ) Channel() (channel <-chan Work, err error) {
-    deliveries, err := rmq.ch.Consume(queueName, "", false, false, false, false, nil)
-    if err == nil {
-        ch := make(chan Work)
-        channel = ch
+func (rmq *rabbitMQ) Channel() (channel <-chan Work) {
+    return rmq.channel
+}
+
+func (rmq *rabbitMQ) init() (err error) {
+    if deliveries, err := rmq.ch.Consume(queueName, "", false, false, false, false, nil); err == nil {
+        rmq.channel = make(chan Work)
+        rmq.stop = make(chan bool)
         go func() {
-            //TODO to finish, have to download the file, put in a tmp dir, and pass the filepath on
-            for delivery := range deliveries {
-                work := &rabbitMQWork { rmq, delivery }
-                ch <- work
+            defer func() {
+                close(rmq.channel)
+                close(rmq.stop)
+                rmq.ch.Close()
+                rmq.conn.Close()
+            }()
+            for {
+                select {
+                    case delivery := <- deliveries:
+                        //TODO to finish, have to download the file, put in a tmp dir, and pass the filepath on
+                        work := &rabbitMQWork { rmq, delivery }
+                        rmq.channel <- work
+                    case <-rmq.stop:
+                        break
+                }
             }
         }()
     }
@@ -34,7 +50,7 @@ func (rmq *rabbitMQ) Channel() (channel <-chan Work, err error) {
 }
 
 func (rmq *rabbitMQ) Close() {
-    return
+    rmq.stop <- true
 }
 
 
@@ -63,7 +79,9 @@ func setup(url, queue string) (conn *amqp.Connection, ch *amqp.Channel, err erro
 
 func newRabbitQueue(server string) (q Queue, err error) {
     if conn, ch, err := setup(server, queueName); err == nil {
-        q = &rabbitMQ { conn, ch }
+        nq := &rabbitMQ { conn, ch, nil, nil }
+        err = nq.init()
+        q = nq
     }
     return
 }

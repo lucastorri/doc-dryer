@@ -6,13 +6,12 @@ type localFilesQueue struct {
     stop chan bool
 }
 
-func (q *localFilesQueue) Channel() (<-chan Work, error) {
-    return q.channel, nil
+func (q *localFilesQueue) Channel() (<-chan Work) {
+    return q.channel
 }
 
 func (q *localFilesQueue) Close() {
     q.stop <- true
-    return
 }
 
 

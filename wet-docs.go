@@ -39,7 +39,11 @@ func main() {
 
     q, err := workq.NewQueue("local=" + file + "," + file)
     // q, err := workq.NewQueue("rabbit=amqp://guest:guest@localhost:5672/")
-    fch, err := q.Channel()
+    if err != nil {
+        panic(err)
+    }
+
+    fch := q.Channel()
     go func() {
         for f := range fch {
             fmt.Println(f.Filepath())
