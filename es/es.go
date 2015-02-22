@@ -23,7 +23,11 @@ type ElasticSearch struct {
 
 func NewElasticSearch(server string, batchSize int) *ElasticSearch {
     var ongoingRequests sync.WaitGroup
-    var client http.Client
+    var transport http.RoundTripper = &http.Transport {
+        DisableKeepAlives: false,
+        DisableCompression: false,
+    }
+    var client http.Client = http.Client { Transport: transport }
     es := &ElasticSearch { server, &client, batchSize, 0, nil, &ongoingRequests, false }
     es.newBuffer()
     return es
