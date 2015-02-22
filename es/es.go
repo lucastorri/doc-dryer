@@ -13,6 +13,7 @@ var indexType = "page"
 
 type ElasticSearch struct {
     server string
+    client *http.Client
     batchSize int
     itemsInBuffer int
     buffer []*wet.WETEntry
@@ -22,7 +23,8 @@ type ElasticSearch struct {
 
 func NewElasticSearch(server string, batchSize int) *ElasticSearch {
     var ongoingRequests sync.WaitGroup
-    es := &ElasticSearch { server, batchSize, 0, nil, &ongoingRequests, false }
+    var client http.Client
+    es := &ElasticSearch { server, &client, batchSize, 0, nil, &ongoingRequests, false }
     es.newBuffer()
     return es
 }
@@ -43,7 +45,7 @@ func (es *ElasticSearch) submit() {
         }
 
         url := es.server + "/_bulk"
-        res, err := http.Post(url, "application/json", bytes.NewReader(buffer.Bytes()))
+        res, err := es.client.Post(url, "application/json", bytes.NewReader(buffer.Bytes()))
         if err == nil {
             res.Body.Close()
         } else {
