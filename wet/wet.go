@@ -1,5 +1,7 @@
 package wet
 
+//TODO close files
+
 import (
     "os"
     "compress/gzip"
