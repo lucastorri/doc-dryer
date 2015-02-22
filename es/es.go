@@ -12,7 +12,6 @@ var indexName = "common-crawl"
 var indexType = "page"
 
 type ElasticSearch struct {
-    client *http.Client
     server string
     batchSize int
     itemsInBuffer int
@@ -23,7 +22,7 @@ type ElasticSearch struct {
 
 func NewElasticSearch(server string, batchSize int) *ElasticSearch {
     var ongoingRequests sync.WaitGroup
-    es := &ElasticSearch { &http.Client{}, server, batchSize, 0, nil, &ongoingRequests, false }
+    es := &ElasticSearch { server, batchSize, 0, nil, &ongoingRequests, false }
     es.newBuffer()
     return es
 }
