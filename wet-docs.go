@@ -47,9 +47,9 @@ func main() {
             } else {
                 f.Nack()
             }
-        }
-        if !esc.Close() {
-            panic("Errors while indexing files")
+            if !esc.Flush() {
+                panic("Errors while submitting files to index")
+            }
         }
     }()
 

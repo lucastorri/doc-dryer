@@ -100,7 +100,7 @@ func (es *ElasticSearch) Add(w *wet.WETEntry) {
     }
 }
 
-func (es *ElasticSearch) Close() bool {
+func (es *ElasticSearch) Flush() bool {
     if !es.isEmpty() {
         es.submit()
     }
