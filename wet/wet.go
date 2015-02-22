@@ -1,6 +1,5 @@
 package wet
 
-//TODO close files
 
 import (
     "os"
@@ -19,6 +18,7 @@ type WETEntry struct {
 
 type WETReader struct {
     reader *bufio.Reader
+    gzip *gzip.Reader
     header *WETEntry
 }
 
@@ -29,7 +29,7 @@ type WETReader struct {
 func FromGZip(file string) (wr *WETReader, err error) {
     if fr, err := os.Open(file); err == nil {
         if gzr, err := gzip.NewReader(fr); err == nil {
-            wr = &WETReader { bufio.NewReader(gzr), nil }
+            wr = &WETReader { bufio.NewReader(gzr), gzr, nil }
             err = wr.init()
         }
     }
@@ -50,16 +50,23 @@ func (reader *WETReader) Header() *WETEntry {
 func (wet *WETReader) Channel() (<-chan struct { Entry *WETEntry; Err error }) {
     channel := make(chan struct { Entry *WETEntry; Err error })
     go func() {
+        defer func() {
+            wet.Close()
+            close(channel)
+        }()
         for {
             entry, err := wet.extractEntry()
             channel <- struct { Entry *WETEntry; Err error }{ entry, err }
             if err != nil {
-                break
+                return
             }
         }
-        close(channel)
     }()
     return channel
+}
+
+func (wet *WETReader) Close() {
+    wet.gzip.Close()
 }
 
 func (wet *WETReader) init() (err error) {

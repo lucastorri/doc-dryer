@@ -33,6 +33,7 @@ func newLocalFilesQueue(files []string) Queue {
         for _, f := range files {
             channel <- &localFileWork { f }
         }
+        close(channel)
     }()
     return &localFilesQueue { channel }
 }
