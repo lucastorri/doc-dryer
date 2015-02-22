@@ -31,7 +31,7 @@ func (es *ElasticSearch) Add(w *wet.WETEntry) error {
 
     encoded, err := json.Marshal(doc)
     if err == nil {
-        url := es.server + indexName + "/" + indexType + "/" + docId
+        url := es.server + "/" + indexName + "/" + indexType + "/" + docId
         var req *http.Request
         req, err = http.NewRequest("PUT", url, bytes.NewReader(encoded))
         if err == nil {

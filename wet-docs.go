@@ -12,15 +12,16 @@ import (
 func main() {
     runtime.GOMAXPROCS(runtime.NumCPU())
 
-    file := "/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
+    //queueConf := "rabbit=amqp://guest:guest@localhost:5672/"
+    queueConf := "local=/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
+    esHost := "http://127.0.01:9200/"
 
-    esc := es.NewElasticSearch("http://127.0.01:9200/")
-
-    q, err := workq.NewQueue("local=" + file + "," + file)
-    // q, err := workq.NewQueue("rabbit=amqp://guest:guest@localhost:5672/")
+    esc := es.NewElasticSearch(esHost)
+    q, err := workq.NewQueue(queueConf)
     if err != nil {
         panic(err)
     }
+
     done := make(chan bool)
     go func() {
         fch := q.Channel()
