@@ -16,7 +16,7 @@ func main() {
     queueConf := "local=/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
     esHost := "http://127.0.01:9200/"
 
-    esc := es.NewElasticSearch(esHost)
+    esc := es.NewElasticSearch(esHost, 100)
     q, err := workq.NewQueue(queueConf)
     if err != nil {
         panic(err)
@@ -39,10 +39,7 @@ func main() {
                     } else if wet.Err != nil {
                         panic(err)
                     } else {
-                        err := esc.Add(wet.Entry)
-                        if err != nil {
-                            panic(err)
-                        }
+                        esc.Add(wet.Entry)
                         fmt.Print(".")
                     }
                 }
@@ -51,6 +48,7 @@ func main() {
                 f.Nack()
             }
         }
+        esc.Close()
     }()
 
 

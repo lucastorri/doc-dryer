@@ -38,6 +38,7 @@ func (rmq *rabbitMQ) init() (err error) {
                 select {
                     case delivery := <- deliveries:
                         //TODO to finish, have to download the file, put in a tmp dir, and pass the filepath on
+                        //http://stackoverflow.com/questions/11692860/how-can-i-efficiently-download-a-large-file-using-go
                         work := &rabbitMQWork { rmq, delivery }
                         rmq.channel <- work
                     case <-rmq.stop:
