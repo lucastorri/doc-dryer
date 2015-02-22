@@ -33,6 +33,11 @@ func (rmq *rabbitMQ) Channel() (channel <-chan Work, err error) {
     return
 }
 
+func (rmq *rabbitMQ) Close() {
+    return
+}
+
+
 func (w *rabbitMQWork) Filepath() string {
     return string(w.delivery.Body)
 }

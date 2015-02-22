@@ -14,6 +14,7 @@ type Work interface {
 
 type Queue interface {
     Channel() (<-chan Work, error)
+    Close()
 }
 
 

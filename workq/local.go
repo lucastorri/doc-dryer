@@ -3,10 +3,17 @@ package workq
 
 type localFilesQueue struct {
     channel <-chan Work
+    stop chan bool
 }
 
 func (q *localFilesQueue) Channel() (<-chan Work, error) {
     return q.channel, nil
+}
+
+func (q *localFilesQueue) Close() {
+    q.stop <- true
+    close(q.stop)
+    return
 }
 
 
@@ -29,11 +36,18 @@ func (w *localFileWork) Nack() error {
 
 func newLocalFilesQueue(files []string) Queue {
     channel := make(chan Work)
+    stop := make(chan bool)
     go func() {
+        defer func() {
+            close(channel)
+        }()
         for _, f := range files {
-            channel <- &localFileWork { f }
+            select {
+                case channel <- &localFileWork { f }:
+                case <-stop: break
+            }
+
         }
-        close(channel)
     }()
-    return &localFilesQueue { channel }
+    return &localFilesQueue { channel, stop }
 }
