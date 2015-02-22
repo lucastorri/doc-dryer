@@ -26,7 +26,7 @@ func NewQueue(config string) (q Queue, err error) {
         case "local":
             q = newLocalFilesQueue(strings.Split(configParts[1], ","))
         default:
-            panic(errors.New("Invalid queue configuration"))
+            panic(errors.New("Invalid queue configuration: " + config))
     }
 
     return

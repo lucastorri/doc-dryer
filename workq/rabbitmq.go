@@ -23,6 +23,7 @@ func (rmq *rabbitMQ) Channel() (channel <-chan Work, err error) {
         ch := make(chan Work)
         channel = ch
         go func() {
+            //TODO to finish, have to download the file, put in a tmp dir, and pass the filepath on
             for delivery := range deliveries {
                 work := &rabbitMQWork { rmq, delivery }
                 ch <- work
