@@ -105,5 +105,8 @@ func (es *ElasticSearch) Flush() bool {
         es.submit()
     }
     es.ongoingRequests.Wait()
-    return !es.hadErrors
+    withErrors := es.hadErrors
+    es.hadErrors = false
+    es.newBuffer()
+    return !withErrors
 }
