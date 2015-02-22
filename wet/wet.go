@@ -47,8 +47,19 @@ func (reader *WETReader) Header() *WETEntry {
  * Returns the next entry on the WET file, or an error if could not parse it. If
  * the end of the file was reached, return an io.EOF error.
  */
-func (wet *WETReader) Next() (*WETEntry, error) {
-    return wet.extractEntry()
+func (wet *WETReader) Channel() (<-chan struct { Entry *WETEntry; Err error }) {
+    channel := make(chan struct { Entry *WETEntry; Err error })
+    go func() {
+        for {
+            entry, err := wet.extractEntry()
+            channel <- struct { Entry *WETEntry; Err error }{ entry, err }
+            if err != nil {
+                break
+            }
+        }
+        close(channel)
+    }()
+    return channel
 }
 
 func (wet *WETReader) init() (err error) {
