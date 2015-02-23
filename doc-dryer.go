@@ -145,7 +145,7 @@ func (o *Observer) WorkReceived(name string) {
 }
 
 func (o *Observer) TransferProgress(downloaded, total int64) {
-    fmt.Printf("%d/%d", downloaded, total)
+    fmt.Printf("%d/%d\n", downloaded, total)
 }
 
 func (o *Observer) TransferError() {
