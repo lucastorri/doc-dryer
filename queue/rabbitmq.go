@@ -12,7 +12,6 @@ import (
 var queueName = "work-queue"
 var maxIdleTime time.Duration = 3 * time.Minute
 
-//TODO close itself after N minute idle
 type rabbitMQ struct {
     conn *amqp.Connection
     ch *amqp.Channel
