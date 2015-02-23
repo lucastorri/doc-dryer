@@ -7,6 +7,8 @@ import (
     "io/ioutil"
     "time"
     "strings"
+    "errors"
+    "fmt"
 )
 
 
@@ -27,7 +29,7 @@ func (rmq *rabbitMQ) Channel() (channel <-chan Work) {
 func (rmq *rabbitMQ) init() (err error) {
     if deliveries, err := rmq.ch.Consume(queueName, "", false, false, false, false, nil); err == nil {
         rmq.channel = make(chan Work)
-        rmq.stop = make(chan bool)
+        rmq.stop = make(chan bool, 1)
         go func() {
             defer func() {
                 close(rmq.channel)
@@ -57,7 +59,13 @@ func (rmq *rabbitMQ) init() (err error) {
                         }
                         defer res.Body.Close()
 
-                        _, err = io.Copy(file, res.Body)
+                        src := &DownloadReader {
+                            Reader: res.Body,
+                            total: res.ContentLength,
+                            stop: rmq.stop,
+                        }
+
+                        _, err = io.Copy(file, src)
                         if err != nil {
                             work.Nack()
                             continue
@@ -143,4 +151,29 @@ func newRabbit(server string) (r *rabbitMQ, err error) {
         r = &rabbitMQ { conn, ch, nil, nil }
     }
     return
+}
+
+type DownloadReader struct {
+    io.Reader
+    stop chan bool
+    total int64
+    downloaded int64
+}
+
+func (r *DownloadReader) Read(p []byte) (int, error) {
+    n, err := r.Reader.Read(p)
+    r.downloaded += int64(n)
+
+    select {
+        case <-r.stop:
+            err = errors.New("Downloaded aborted")
+            r.stop <- true
+        default:
+    }
+
+    if err == nil {
+        fmt.Println("Downloaded", r.downloaded, " bytes of", r.total)
+    }
+
+    return n, err
 }

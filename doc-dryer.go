@@ -97,7 +97,7 @@ func createWorkers() ([]*worker.Worker, * sync.WaitGroup) {
     var wg sync.WaitGroup
 
     for i, _ := range workers {
-        w, err := worker.New(config.esHost, config.queueConf, config.batchSize, &WorkerObserver { &wg })
+        w, err := worker.New(config.esHost, config.queueConf, config.batchSize, &Observer { &wg })
         if err != nil {
             panic(err)
         }
@@ -107,34 +107,34 @@ func createWorkers() ([]*worker.Worker, * sync.WaitGroup) {
     return workers, &wg
 }
 
-type WorkerObserver struct {
+type Observer struct {
     wg *sync.WaitGroup
 }
 
-func (o *WorkerObserver) FileStarted(filepath string) {
+func (o *Observer) FileStarted(filepath string) {
     fmt.Println(filepath)
 }
 
-func (o *WorkerObserver) DocAdded() {
+func (o *Observer) DocAdded() {
     fmt.Print(".")
 }
 
-func (o *WorkerObserver) FileError(err error) {
+func (o *Observer) FileError(err error) {
     fmt.Print("x")
 }
 
-func (o *WorkerObserver) FileFinished() {
+func (o *Observer) FileFinished() {
     fmt.Print("!")
 }
 
-func (o *WorkerObserver) FlushOK() {
+func (o *Observer) FlushOK() {
     fmt.Println("+")
 }
 
-func (o *WorkerObserver) FlushFailed() {
+func (o *Observer) FlushFailed() {
     fmt.Println("-")
 }
 
-func (o *WorkerObserver) AllDone() {
+func (o *Observer) AllDone() {
     o.wg.Done()
 }
