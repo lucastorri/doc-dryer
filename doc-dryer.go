@@ -3,22 +3,48 @@ package main
 import (
     "fmt"
     "here.com/scrooge/doc-dryer/worker"
+    "here.com/scrooge/doc-dryer/queue"
     "runtime"
     "os"
     "os/signal"
     "syscall"
     "sync"
+    "flag"
+    "io"
+    "bufio"
 )
+
+var config struct {
+    esHost string
+    queueConf string
+    batchSize int
+    nWorkers int
+    pathsFile string
+}
+
+func init() {
+    flag.StringVar(&config.pathsFile, "publish", "", "file to be published")
+    flag.StringVar(&config.queueConf, "queue", "rabbit=amqp://guest:guest@localhost:5672/", "rabbit=amqp://guest:guest@localhost:5672/ or file=file1,file2")
+    flag.StringVar(&config.esHost, "es", "http://127.0.01:9200/", "elasticsearch endpoint")
+
+    flag.IntVar(&config.batchSize, "batch", 300, "batch size for publishing to ElasticSearch")
+    flag.IntVar(&config.nWorkers, "workers", 1, "number of workers to use")
+
+    flag.Parse()
+}
 
 func main() {
     runtime.GOMAXPROCS(runtime.NumCPU())
 
-    esHost := "http://127.0.01:9200/"
-    queueConf := "rabbit=amqp://guest:guest@localhost:5672/"
-    // queueConf := "local=/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
-    batchSize := 300
+    if config.pathsFile == "" {
+        process()
+    } else {
+        publish()
+    }
+}
 
-    workers, wg := createWorkers(1, esHost, queueConf, batchSize)
+func process() {
+    workers, wg := createWorkers()
 
     sigs := make(chan os.Signal, 1)
     signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
@@ -39,12 +65,39 @@ func main() {
     wg.Wait()
 }
 
-func createWorkers(n int, esHost, queueConf string, batchSize int) ([]*worker.Worker, * sync.WaitGroup) {
-    workers := make([]*worker.Worker, n)
+func publish() {
+    publisher, err := queue.NewPublisher(config.queueConf)
+    if err != nil {
+        panic(err)
+    }
+    defer publisher.Close()
+
+    file, err := os.Open(config.pathsFile)
+    if err != nil {
+        panic(err)
+    }
+    defer file.Close()
+
+    reader := bufio.NewReader(file)
+    for {
+        url, err := reader.ReadString(byte('\n'))
+        if err == io.EOF {
+            return
+        } else if err == nil {
+            err = publisher.Push(url)
+        }
+        if err != nil {
+            panic(err)
+        }
+    }
+}
+
+func createWorkers() ([]*worker.Worker, * sync.WaitGroup) {
+    workers := make([]*worker.Worker, config.nWorkers)
     var wg sync.WaitGroup
 
     for i, _ := range workers {
-        w, err := worker.New(esHost, queueConf, batchSize, &WorkerObserver { &wg })
+        w, err := worker.New(config.esHost, config.queueConf, config.batchSize, &WorkerObserver { &wg })
         if err != nil {
             panic(err)
         }

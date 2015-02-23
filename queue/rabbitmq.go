@@ -6,6 +6,7 @@ import (
     "io"
     "io/ioutil"
     "time"
+    "strings"
 )
 
 
@@ -75,8 +76,23 @@ func (rmq *rabbitMQ) init() (err error) {
     return
 }
 
+func (rmq *rabbitMQ) Push(url string) error {
+    msg := amqp.Publishing {
+        DeliveryMode: amqp.Persistent,
+        Timestamp:    time.Now(),
+        ContentType:  "text/plain",
+        Body:         []byte(strings.TrimSpace(url)),
+    }
+    return rmq.ch.Publish("", queueName, false, false, msg)
+}
+
 func (rmq *rabbitMQ) Close() {
-    rmq.stop <- true
+    if rmq.stop != nil {
+        rmq.stop <- true
+    } else {
+        rmq.ch.Close()
+        rmq.conn.Close()
+    }
 }
 
 
@@ -110,11 +126,21 @@ func setup(url, queue string) (conn *amqp.Connection, ch *amqp.Channel, err erro
     return
 }
 
-func newRabbitQueue(server string) (q Queue, err error) {
+func newRabbitQueue(server string) (Queue, error) {
+    r, err := newRabbit(server)
+    if err == nil {
+        r.init()
+    }
+    return r, err
+}
+
+func newRabbitPublisher(server string) (Publisher, error) {
+    return newRabbit(server)
+}
+
+func newRabbit(server string) (r *rabbitMQ, err error) {
     if conn, ch, err := setup(server, queueName); err == nil {
-        nq := &rabbitMQ { conn, ch, nil, nil }
-        err = nq.init()
-        q = nq
+        r = &rabbitMQ { conn, ch, nil, nil }
     }
     return
 }

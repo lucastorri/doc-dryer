@@ -1,5 +1,9 @@
 package queue
 
+import (
+    "errors"
+)
+
 
 type localFilesQueue struct {
     channel <-chan Work
@@ -48,4 +52,8 @@ func newLocalFilesQueue(files []string) Queue {
         }
     }()
     return &localFilesQueue { channel, stop }
+}
+
+func newLocalFilePublisher() (Publisher, error) {
+    return nil, errors.New("Can not publish to local queue")
 }
