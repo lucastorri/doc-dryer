@@ -4,9 +4,9 @@ import (
     "io"
     "errors"
     "sync"
-    "here.com/scrooge/wet-docs/wet"
-    "here.com/scrooge/wet-docs/workq"
-    "here.com/scrooge/wet-docs/es"
+    "here.com/scrooge/doc-dryer/wet"
+    "here.com/scrooge/doc-dryer/workq"
+    "here.com/scrooge/doc-dryer/es"
 )
 
 

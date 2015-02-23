@@ -2,7 +2,7 @@ package main
 
 import (
     "fmt"
-    "here.com/scrooge/wet-docs/worker"
+    "here.com/scrooge/doc-dryer/worker"
     "runtime"
     "os"
     "os/signal"

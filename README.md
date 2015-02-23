@@ -10,11 +10,11 @@ $GOPATH
 └── src
     └── here.com
         └── scrooge
-            └── wet-docs
-                └── wet-docs.go
+            └── doc-dryer
+                └── doc-dryer.go
                 └── ...
 ```
 
 ```
-go build here.com/scrooge/wet-docs
+go build here.com/scrooge/doc-dryer
 ```
