@@ -35,7 +35,7 @@ func (rmq *rabbitMQ) init() (err error) {
                 rmq.conn.Close()
             }()
             for {
-                timer := time.AfterFunc(maxIdleTime, func() {})
+                timer := time.NewTimer(maxIdleTime)
                 select {
                     case delivery := <- deliveries:
                         work := &rabbitMQWork { rmq, delivery, "" }
@@ -64,9 +64,9 @@ func (rmq *rabbitMQ) init() (err error) {
 
                         rmq.channel <- work
                     case <-timer.C:
-                        break
+                        return
                     case <-rmq.stop:
-                        break
+                        return
                 }
                 timer.Stop()
             }
