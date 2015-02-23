@@ -28,15 +28,15 @@ type WorkerObserver interface {
     AllDone()
 }
 
-func New(esHost, queueConf string, batchSize int, observer WorkerObserver) (w *Worker, err error) {
-    q, err := queue.NewQueue(queueConf)
+func New(esHost, queueConf string, batchSize int, wo WorkerObserver, qo queue.QueueObserver) (w *Worker, err error) {
+    q, err := queue.NewQueue(queueConf, qo)
     if err == nil {
         var done sync.Mutex
         w = &Worker {
             esClient: es.NewElasticSearch(esHost, batchSize),
             queue: q,
             done: &done,
-            observer: observer,
+            observer: wo,
             stop: make(chan bool, 1),
         }
     }

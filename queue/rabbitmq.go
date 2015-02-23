@@ -8,7 +8,6 @@ import (
     "time"
     "strings"
     "errors"
-    "fmt"
 )
 
 
@@ -20,6 +19,7 @@ type rabbitMQ struct {
     ch *amqp.Channel
     channel chan Work
     stop chan bool
+    observer QueueObserver
 }
 
 func (rmq *rabbitMQ) Channel() (channel <-chan Work) {
@@ -41,13 +41,18 @@ func (rmq *rabbitMQ) init() (err error) {
                 timer := time.NewTimer(maxIdleTime)
                 select {
                     case delivery := <- deliveries:
+                        url := string(delivery.Body)
+                        rmq.observer.WorkReceived(url)
+
                         work := &rabbitMQWork { rmq, delivery, "" }
 
-                        filepath, err := rmq.downloadFile(string(delivery.Body))
+                        filepath, err := rmq.downloadFile(url)
                         if err == nil {
                             work.filepath = filepath
+                            rmq.observer.WorkReady()
                             rmq.channel <- work
                         } else {
+                            rmq.observer.TransferError()
                             work.Nack()
                         }
                     case <-timer.C:
@@ -78,6 +83,7 @@ func (rmq *rabbitMQ) downloadFile(url string) (filepath string, err error) {
 
     src := &downloadReader {
         Reader: res.Body,
+        observer: rmq.observer,
         total: res.ContentLength,
         stop: rmq.stop,
     }
@@ -136,10 +142,11 @@ func setup(url, queue string) (conn *amqp.Connection, ch *amqp.Channel, err erro
     return
 }
 
-func newRabbitQueue(server string) (Queue, error) {
+func newRabbitQueue(server string, observer QueueObserver) (Queue, error) {
     r, err := newRabbit(server)
     if err == nil {
         r.init()
+        r.observer = observer
     }
     return r, err
 }
@@ -150,13 +157,14 @@ func newRabbitPublisher(server string) (Publisher, error) {
 
 func newRabbit(server string) (r *rabbitMQ, err error) {
     if conn, ch, err := setup(server, queueName); err == nil {
-        r = &rabbitMQ { conn, ch, nil, nil }
+        r = &rabbitMQ { conn, ch, nil, nil, nil }
     }
     return
 }
 
 type downloadReader struct {
     io.Reader
+    observer QueueObserver
     stop chan bool
     total int64
     downloaded int64
@@ -174,7 +182,7 @@ func (r *downloadReader) Read(p []byte) (int, error) {
     }
 
     if err == nil {
-        fmt.Println("Downloaded", r.downloaded, " bytes of", r.total)
+        r.observer.TransferProgress(r.downloaded, r.total)
     }
 
     return n, err

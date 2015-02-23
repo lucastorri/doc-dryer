@@ -97,7 +97,8 @@ func createWorkers() ([]*worker.Worker, * sync.WaitGroup) {
     var wg sync.WaitGroup
 
     for i, _ := range workers {
-        w, err := worker.New(config.esHost, config.queueConf, config.batchSize, &Observer { &wg })
+        observer := &Observer { &wg }
+        w, err := worker.New(config.esHost, config.queueConf, config.batchSize, observer, observer)
         if err != nil {
             panic(err)
         }
@@ -137,4 +138,19 @@ func (o *Observer) FlushFailed() {
 
 func (o *Observer) AllDone() {
     o.wg.Done()
+}
+
+func (o *Observer) WorkReceived(name string) {
+    fmt.Println(name)
+}
+
+func (o *Observer) TransferProgress(downloaded, total int64) {
+    fmt.Printf("%d/%d", downloaded, total)
+}
+
+func (o *Observer) TransferError() {
+    fmt.Println("download error")
+}
+
+func (o *Observer) WorkReady() {
 }

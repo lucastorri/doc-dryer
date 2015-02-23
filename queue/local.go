@@ -37,7 +37,7 @@ func (w *localFileWork) Nack() error {
 }
 
 
-func newLocalFilesQueue(files []string) Queue {
+func newLocalFilesQueue(files []string, observer QueueObserver) Queue {
     channel := make(chan Work)
     stop := make(chan bool)
     go func() {
@@ -45,6 +45,8 @@ func newLocalFilesQueue(files []string) Queue {
             close(channel)
         }()
         for _, f := range files {
+            observer.WorkReceived(f)
+            observer.WorkReady()
             select {
                 case channel <- &localFileWork { f }:
                 case <-stop: break
