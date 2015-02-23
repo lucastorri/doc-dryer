@@ -59,7 +59,7 @@ func (rmq *rabbitMQ) init() (err error) {
                         }
                         defer res.Body.Close()
 
-                        src := &DownloadReader {
+                        src := &downloadReader {
                             Reader: res.Body,
                             total: res.ContentLength,
                             stop: rmq.stop,
@@ -153,14 +153,14 @@ func newRabbit(server string) (r *rabbitMQ, err error) {
     return
 }
 
-type DownloadReader struct {
+type downloadReader struct {
     io.Reader
     stop chan bool
     total int64
     downloaded int64
 }
 
-func (r *DownloadReader) Read(p []byte) (int, error) {
+func (r *downloadReader) Read(p []byte) (int, error) {
     n, err := r.Reader.Read(p)
     r.downloaded += int64(n)
 
