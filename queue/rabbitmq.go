@@ -5,10 +5,12 @@ import (
     "net/http"
     "io"
     "io/ioutil"
+    "time"
 )
 
 
 var queueName = "work-queue"
+var maxIdleTime time.Duration = 3 * time.Minute
 
 //TODO close itself after N minute idle
 type rabbitMQ struct {
@@ -34,6 +36,7 @@ func (rmq *rabbitMQ) init() (err error) {
                 rmq.conn.Close()
             }()
             for {
+                timer := time.AfterFunc(maxIdleTime, func() {})
                 select {
                     case delivery := <- deliveries:
                         work := &rabbitMQWork { rmq, delivery, "" }
@@ -61,9 +64,12 @@ func (rmq *rabbitMQ) init() (err error) {
                         }
 
                         rmq.channel <- work
+                    case <-timer.C:
+                        break
                     case <-rmq.stop:
                         break
                 }
+                timer.Stop()
             }
         }()
     }
