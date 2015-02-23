@@ -1,4 +1,4 @@
-package workq
+package queue
 
 
 type localFilesQueue struct {

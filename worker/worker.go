@@ -5,14 +5,14 @@ import (
     "errors"
     "sync"
     "here.com/scrooge/doc-dryer/wet"
-    "here.com/scrooge/doc-dryer/workq"
+    "here.com/scrooge/doc-dryer/queue"
     "here.com/scrooge/doc-dryer/es"
 )
 
 
 type Worker struct {
     esClient *es.ElasticSearch
-    queue workq.Queue
+    queue queue.Queue
     done *sync.Mutex
     observer WorkerObserver
     stop chan bool
@@ -29,7 +29,7 @@ type WorkerObserver interface {
 }
 
 func New(esHost, queueConf string, batchSize int, observer WorkerObserver) (w *Worker, err error) {
-    q, err := workq.NewQueue(queueConf)
+    q, err := queue.NewQueue(queueConf)
     if err == nil {
         var done sync.Mutex
         w = &Worker {
