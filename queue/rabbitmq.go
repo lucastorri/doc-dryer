@@ -102,9 +102,9 @@ func (w *rabbitMQWork) Nack() error {
 func setup(url, queue string) (conn *amqp.Connection, ch *amqp.Channel, err error) {
     if conn, err = amqp.Dial(url); err == nil {
         if ch, err = conn.Channel(); err == nil {
-            // if err = ch.Qos(1, 0, false); err == nil {
+            if err = ch.Qos(1, 0, false); err == nil {
                 _, err = ch.QueueDeclare(queue, true, false, false, false, nil)
-            // }
+            }
         }
     }
     return
