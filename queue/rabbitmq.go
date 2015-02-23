@@ -42,36 +42,14 @@ func (rmq *rabbitMQ) init() (err error) {
                 select {
                     case delivery := <- deliveries:
                         work := &rabbitMQWork { rmq, delivery, "" }
-                        var err error
 
-                        file, err := ioutil.TempFile("", "doc-dryer-wet-part-")
-                        if err != nil {
+                        filepath, err := rmq.downloadFile(string(delivery.Body))
+                        if err == nil {
+                            work.filepath = filepath
+                            rmq.channel <- work
+                        } else {
                             work.Nack()
-                            continue
                         }
-                        defer file.Close()
-
-                        work.filepath = file.Name()
-                        res, err := http.Get(string(delivery.Body))
-                        if err != nil {
-                            work.Nack()
-                            continue
-                        }
-                        defer res.Body.Close()
-
-                        src := &downloadReader {
-                            Reader: res.Body,
-                            total: res.ContentLength,
-                            stop: rmq.stop,
-                        }
-
-                        _, err = io.Copy(file, src)
-                        if err != nil {
-                            work.Nack()
-                            continue
-                        }
-
-                        rmq.channel <- work
                     case <-timer.C:
                         return
                     case <-rmq.stop:
@@ -81,6 +59,30 @@ func (rmq *rabbitMQ) init() (err error) {
             }
         }()
     }
+    return
+}
+
+func (rmq *rabbitMQ) downloadFile(url string) (filepath string, err error) {
+    file, err := ioutil.TempFile("", "doc-dryer-wet-part-")
+    if err != nil {
+        return
+    }
+    defer file.Close()
+
+    filepath = file.Name()
+    res, err := http.Get(url)
+    if err != nil {
+        return
+    }
+    defer res.Body.Close()
+
+    src := &downloadReader {
+        Reader: res.Body,
+        total: res.ContentLength,
+        stop: rmq.stop,
+    }
+
+    _, err = io.Copy(file, src)
     return
 }
 
