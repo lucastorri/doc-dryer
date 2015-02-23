@@ -12,6 +12,7 @@ func (q *localFilesQueue) Channel() (<-chan Work) {
 
 func (q *localFilesQueue) Close() {
     q.stop <- true
+    close(q.stop)
 }
 
 
@@ -38,7 +39,6 @@ func newLocalFilesQueue(files []string) Queue {
     go func() {
         defer func() {
             close(channel)
-            close(stop)
         }()
         for _, f := range files {
             select {

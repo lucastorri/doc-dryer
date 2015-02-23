@@ -15,6 +15,7 @@ type Worker struct {
     queue workq.Queue
     done *sync.Mutex
     observer WorkerObserver
+    stop chan bool
 }
 
 type WorkerObserver interface {
@@ -36,6 +37,7 @@ func New(esHost, queueConf string, batchSize int, observer WorkerObserver) (w *W
             queue: q,
             done: &done,
             observer: observer,
+            stop: make(chan bool, 1),
         }
     }
     return
@@ -48,6 +50,10 @@ func (w *Worker) processFile(filepath string) error {
     }
     wch := wr.Channel()
     for wet := range wch {
+        select {
+            case <-w.stop: return errors.New("Worker stopped in mid work")
+            default:
+        }
         if wet.Err == io.EOF {
             break
         } else if wet.Err != nil {
@@ -90,6 +96,8 @@ func (w *Worker) Run() {
 }
 
 func (w *Worker) Close() {
+    w.stop <- true
+    close(w.stop)
     w.queue.Close()
     w.done.Lock()
     defer w.done.Unlock()

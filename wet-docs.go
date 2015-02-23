@@ -4,6 +4,9 @@ import (
     "fmt"
     "here.com/scrooge/wet-docs/worker"
     "runtime"
+    "os"
+    "os/signal"
+    "syscall"
 )
 
 func main() {
@@ -14,11 +17,19 @@ func main() {
     queueConf := "local=/Users/lucastorri/Work/wet-stream/CC-MAIN-20141224185923-00096-ip-10-231-17-201.ec2.internal.warc.wet.gz"
     batchSize := 300
 
+    sigs := make(chan os.Signal, 1)
+    signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+
     done := make(chan bool)
     w, err := worker.New(esHost, queueConf, batchSize, &WorkerObserver{ done })
     if err != nil {
         panic(err)
     }
+
+    go func() {
+        <-sigs
+        w.Close()
+    }()
 
     go func() {
         w.Run()
