@@ -39,7 +39,7 @@ func (o *WorkerObserver) DocAdded() {
     fmt.Print(".")
 }
 
-func (o *WorkerObserver) FileError() {
+func (o *WorkerObserver) FileError(err error) {
     fmt.Print("x")
 }
 

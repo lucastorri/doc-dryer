@@ -20,7 +20,7 @@ type Worker struct {
 type WorkerObserver interface {
     FileStarted(filepath string)
     DocAdded()
-    FileError()
+    FileError(err error)
     FileFinished()
     FlushOK()
     FlushFailed()
@@ -53,7 +53,9 @@ func (w *Worker) processFile(filepath string) error {
         } else if wet.Err != nil {
             return wet.Err
         } else {
-            w.esClient.Add(wet.Entry)
+            if !w.esClient.Add(wet.Entry) {
+                return errors.New("Errors while submitting files to index")
+            }
             w.observer.DocAdded()
         }
     }
@@ -75,7 +77,7 @@ func (w *Worker) Run() {
             w.observer.FileFinished()
             err = f.Ack()
         } else {
-            w.observer.FileError()
+            w.observer.FileError(err)
             err = f.Nack()
         }
         if err == nil {

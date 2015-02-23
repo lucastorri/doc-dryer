@@ -99,11 +99,12 @@ func (es *ElasticSearch) enqueue(w *wet.WETEntry) {
     es.itemsInBuffer++
 }
 
-func (es *ElasticSearch) Add(w *wet.WETEntry) {
+func (es *ElasticSearch) Add(w *wet.WETEntry) bool {
     es.enqueue(w)
     if es.isFull() {
         es.submit()
     }
+    return !es.hadErrors
 }
 
 func (es *ElasticSearch) Flush() bool {
