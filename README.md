@@ -20,3 +20,5 @@ go build here.com/scrooge/doc-dryer
 
 go build here.com/scrooge/doc-dryer && time ./doc-dryer -publish urls.txt
 ```
+
+http://www.elasticsearch.org/blog/tribe-node/
