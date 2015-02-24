@@ -2,8 +2,8 @@ package main
 
 import (
     "fmt"
-    "here.com/scrooge/doc-dryer/worker"
-    "here.com/scrooge/doc-dryer/queue"
+    "github.com/lucastorri/doc-dryer/worker"
+    "github.com/lucastorri/doc-dryer/queue"
     "runtime"
     "os"
     "os/signal"

@@ -16,7 +16,7 @@ $GOPATH
 ```
 
 ```
-go build here.com/scrooge/doc-dryer
+go build github.com/lucastorri/doc-dryer
 
 go build github.com/lucastorri/doc-dryer && time ./doc-dryer -publish urls.txt
 ```

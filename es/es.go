@@ -5,7 +5,7 @@ import (
     "sync"
     "net/http"
     "encoding/json"
-    "here.com/scrooge/doc-dryer/wet"
+    "github.com/lucastorri/doc-dryer/wet"
 )
 
 var indexName = "common-crawl"
