@@ -8,8 +8,8 @@ On a structure like:
 ```
 $GOPATH
 └── src
-    └── here.com
-        └── scrooge
+    └── github.com
+        └── lucastorri
             └── doc-dryer
                 └── doc-dryer.go
                 └── ...
@@ -18,7 +18,7 @@ $GOPATH
 ```
 go build here.com/scrooge/doc-dryer
 
-go build here.com/scrooge/doc-dryer && time ./doc-dryer -publish urls.txt
+go build github.com/lucastorri/doc-dryer && time ./doc-dryer -publish urls.txt
 ```
 
 http://www.elasticsearch.org/blog/tribe-node/
