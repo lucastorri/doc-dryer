@@ -79,17 +79,20 @@ func publish() {
     defer file.Close()
 
     reader := bufio.NewReader(file)
+    total := 0
     for {
         url, err := reader.ReadString(byte('\n'))
         if err == io.EOF {
             return
         } else if err == nil {
             err = publisher.Push(url)
+            total++
         }
         if err != nil {
             panic(err)
         }
     }
+    fmt.Println("Published", total, "lines")
 }
 
 func createWorkers() ([]*worker.Worker, * sync.WaitGroup) {
